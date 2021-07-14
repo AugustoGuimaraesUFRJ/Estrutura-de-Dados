@@ -1,0 +1,32 @@
+#include <stdio.h>
+#define max(a,b) (a>b)?a:b
+int Alunos[50000]; // Crio o vetor que armazenará os alunos
+int Find(int i) // Função find: retorna o   representante do conjunto que contém um elemento i
+{
+    if(i==Alunos[i])
+        return i;
+    else
+        return (Alunos[i]=Find(Alunos[i]));
+}
+void Union(int a,int b) // Função union: faz a união dos conjuntos dos elementos a e b
+{
+    Alunos[Find(a)] = Find(b);
+}
+int main()
+{
+    int j,i,m,n,k;
+    scanf("%d %d",&n,&m);
+    j = 1;
+    while(n||m){
+        for(i=1;i<=n;i++) //Inicializo alunos
+            Alunos[i]=i;
+        while(m--){
+            scanf("%d %d",&i,&k);
+            Union(i,k);}
+        m=0;
+        for(k=1;k<=n;k++)
+            m+=(Find(k)==k);
+        printf("Case %d: %d\n",j++,m);
+        scanf("%d %d",&n,&m);}
+    return 0;
+}
