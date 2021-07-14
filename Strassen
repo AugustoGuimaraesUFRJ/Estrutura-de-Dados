@@ -1,0 +1,223 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+#include<time.h>
+
+// Augusto Guimaraes Rodrigues de Lima 119025393
+
+enum array { x11, x12, x21, x22, y11, y12, y21, y22, //  Sub matrizes
+            P1, P2, P3, P4, P5, P6, P7,
+            C11, C12, C21, C22,
+            S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, S12, S13, S14, k };
+
+double *alocar_matriz(int n){
+    double *A;
+    A = malloc(n*n*sizeof(double));
+    if (A==NULL){
+        printf("Memoria insuficiente.\n");
+        exit(1);}
+    return A;
+}
+int main()
+{
+    int N;
+    int i, j;
+    clock_t t1, t2,t3,t4;
+    double augusto;
+    double julia;
+    float lg;
+    double  *A, *B, *C, *D;
+    printf("Insira o tamanho da matriz como uma potencia de 2: \n");
+        scanf("%d",&N);
+        lg=log10(N)/log10(2);
+        if(lg>(int)lg){
+            printf("Tamanho da matriz nao eh uma potencia de 2! \n");}
+        else{
+            A = alocar_matriz(N);
+            B = alocar_matriz(N);
+            C = alocar_matriz(N);
+            D = alocar_matriz(N);
+            srand((unsigned)time(NULL));
+
+            for (i=0; i<N*N; i++){
+                A[i] = (rand()%2001)-1000;  //Gerando matrizes aleatorias com numeros de -1000 a 1000
+                B[i] = (rand()%2001)-1000;}
+
+            printf("Primeira matriz gerada aleatoriamente\n\n");
+            for (i = 0; i < N; i++){
+                for (j = 0; j < N; j++)
+                    printf("%6.f  ",A[i*N+j]);
+                printf("\n");}
+            printf("\n");
+            printf("Segunda matriz gerada aleatoriamente\n\n");
+            for (i = 0; i < N; i++)
+        {
+                for (j = 0; j < N; j++)
+                    printf("%6.f  ",B[i*N+j]);
+                printf("\n");
+        }
+            printf("\nMultiplicacao de Strassen\n\n");
+            t1 = clock();
+            strassen(A, B, C, N);
+            t2 = clock();
+            for (i = 0; i < N; i++)
+        {
+                for (j = 0; j < N; j++)
+                    printf("%9.f  ",C[i*N+j]);
+                printf("\n");
+        }
+            free(C);
+            t3 = clock();
+            multiplicacao_normal(A, B, D, N);
+            t4 = clock ();
+            printf("\nMultiplicacao normal\n\n");
+            for (i = 0; i < N; i++)
+        {
+                for (j = 0; j < N; j++)
+                    printf("%9.f  ",D[i*N+j]);
+                printf("\n");
+        }
+            augusto = ((double) (t2 - t1))*100/ CLOCKS_PER_SEC;
+            julia = ((double) (t4 - t3))*100/ CLOCKS_PER_SEC;
+            printf("Strassen = %lf\t\t",augusto);
+            printf("Normal = %lf\t\t",julia);
+            printf("Fim");
+            free(D);
+            free(B);
+            free(A);
+            return(0);
+        }
+}
+
+void strassen(double *A, double *B, double *C, int m)
+{
+    int linha = 0;
+    int col = 0;
+    int n = m/2;
+    int i = 0;
+    int j = 0;
+    double *e[k];
+    if (m <= 0){
+        multiplicacao_normal(A, B, C, m);
+        return;}
+    if (m == 1){
+        *C = *A * *B;
+        return;}
+
+    for (i=0; i<k; i++) {                // Memoria para arrays
+        e[i] = alocar_matriz(m);}
+
+    for (linha = 0, i = 0; linha < n; linha++, i++){
+        for (col = 0, j = 0; col < n; col++, j++){
+            e[x11][i*n+j] = A[linha*m+col];
+            e[y11][i*n+j] = B[linha*m+col];}
+        for (col = n, j = 0; col < m; col++, j++){
+            e[x12][i*n+j] = A[linha*m+col];
+            e[y12][i*n+j] = B[linha*m+col];}}
+
+    for (linha = n, i = 0; linha < m; linha++, i++){
+        for (col = 0, j = 0; col < n; col++, j++){
+            e[x21][i*n+j] = A[linha*m+col];
+            e[y21][i*n+j] = B[linha*m+col];}
+        for (col = n, j = 0; col < m; col++, j++){
+            e[x22][i*n+j] = A[linha*m+col];
+            e[y22][i*n+j] = B[linha*m+col];}}
+
+    // P1
+    somar(e[x11], e[x22], e[S1], n);
+    somar(e[y11], e[y22], e[S2], n);
+    strassen(e[S1], e[S2], e[P1], n);
+
+    // P2
+    somar(e[x21], e[x22], e[S3], n);
+    strassen(e[S3], e[y11], e[P2], n);
+
+    //  P3
+    subtrair(e[y12], e[y22], e[S4], n);
+    strassen(e[x11], e[S4], e[P3], n);
+
+    //  P4
+    subtrair(e[y21], e[y11], e[S5], n);
+    strassen(e[x22], e[S5], e[P4], n);
+
+    //  P5
+    somar(e[x11], e[x12], e[S6], n);
+    strassen(e[S6], e[y22], e[P5], n);
+
+    //  P6
+    subtrair(e[x21], e[x11], e[S7], n);
+    somar(e[y11], e[y12], e[S8], n);
+    strassen(e[S7], e[S8], e[P6], n);
+
+    //  P7
+    subtrair(e[x12], e[x22], e[S9], n);
+    somar(e[y21], e[y22], e[S10], n);
+    strassen(e[S9], e[S10], e[P7], n);
+
+    //  C11
+    somar(e[P1], e[P4], e[S11], n);
+    subtrair(e[S11], e[P5], e[S12], n);
+    somar(e[S12], e[P7], e[C11], n);
+
+    //  C12
+    somar(e[P3], e[P5], e[C12], n);
+
+    //  C21
+    somar(e[P2], e[P4], e[C21], n);
+
+    //  C22
+    somar(e[P1], e[P3], e[S13], n);
+    subtrair(e[S13], e[P2], e[S14], n);
+    somar(e[S14], e[P6], e[C22], n);
+
+    for (linha = 0, i = 0; linha < n; linha++, i++){
+        for (col = 0, j = 0; col < n; col++, j++)
+            C[linha*m+col] = e[C11][i*n+j];
+        for (col = n, j = 0; col < m; col++, j++)
+            C[linha*m+col] = e[C12][i*n+j];}
+
+    for (linha = n, i = 0; linha < m; linha++, i++){
+        for (col = 0, j = 0; col < n; col++, j++)
+            C[linha*m+col] = e[C21][i*n+j];
+        for (col = n, j = 0; col < m; col++, j++)
+            C[linha*m+col] = e[C22][i*n+j];}
+
+    //Liberar memoria senão o sistema mata o programa antes de terminar
+    for (i=0; i<k; i++)
+        free (e[i]);
+}
+
+void multiplicacao_normal(double *A, double *B, double *C, int n){
+    int i = 0, j = 0, k = 0, linha = 0, col = 0;
+    for (i = 0; i < n; i++){
+        for (j = 0; j < n; j++){
+            C[i*n+j] = 0.0;
+            for (k = 0; k < n; k++){
+                C[i*n+j] += A[i*n+k] * B[k*n+j];}
+          }}}
+
+void somar(double *A, double *B, double *C, int n){
+    int linha = 0, col = 0;
+    for (linha = 0; linha < n; linha++)
+        for (col = 0; col < n; col++)
+            C[linha*n+col] = A[linha*n+col] + B[linha*n+col];}
+
+void subtrair(double *A, double *B, double *C, int n){
+    int linha = 0, col = 0;
+    for (linha = 0; linha < n; linha++)
+        for (col = 0; col < n; col++)
+            C[linha*n+col] = A[linha*n+col] - B[linha*n+col];}
+
+/*  1         normal = 0.0000          strassen = 0.0000
+    2         normal = 0.0000          strassen = 0.0000
+    4         normal = 0.0000          strassen = 0.0000
+    8         normal = 0.0000          strassen = 0.0000
+    16        normal = 0.0000          strassen = 0.1000
+    32        normal = 0.0000          strassen = 0.8000
+    64        normal = 0.1000          strassen = 4.6000
+    128       normal = 0.7000          strassen = 32.0000
+    256       normal = 6.1000          strassen = 187.6000
+    512       normal = 43.5000         strassen = 1350.0000
+    1024      normal = 1784.5000       strassen = 9390.8000
+    2048      normal = 19400.1000      strassen = 64558.1000
+    4096      normal = 148646.5000     strassen = 440992.4000*/
